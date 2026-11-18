@@ -1,0 +1,847 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pohon Literasi Digital</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f8f2;
+  color: #26352a;
+}
+
+header {
+  background: #2f6b3d;
+  color: white;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+header h1 { margin: 0; font-size: 32px; }
+header p { margin-top: 10px; font-size: 15px; }
+
+.container {
+  width: 100%;
+  max-width: 1150px;
+  margin: auto;
+  padding: 25px 18px 40px;
+}
+
+.kelas-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.kelas-btn {
+  border: 1px solid #d6dfd5;
+  background: white;
+  color: #2f6b3d;
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.kelas-btn:hover { transform: translateY(-2px); }
+
+.kelas-btn.active {
+  background: #2f6b3d;
+  color: white;
+  border-color: #2f6b3d;
+  box-shadow: 0 4px 10px rgba(47,107,61,.18);
+}
+
+.info {
+  text-align: center;
+  font-size: 17px;
+  line-height: 1.7;
+  margin-bottom: 18px;
+}
+
+.jumlah { color: #2f6b3d; }
+
+.pohon-area {
+  position: relative;
+  width: 100%;
+  height: 650px;
+  overflow: hidden;
+  border-radius: 28px;
+  background: linear-gradient(
+    to bottom,
+    #cbeafa 0%,
+    #e5f4df 70%,
+    #d2e7ca 100%
+  );
+}
+
+.matahari {
+  position: absolute;
+  top: 35px;
+  right: 60px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #ffe28a;
+  opacity: .9;
+}
+
+.awan {
+  position: absolute;
+  width: 95px;
+  height: 28px;
+  border-radius: 30px;
+  background: rgba(255,255,255,.75);
+}
+
+.awan::before,
+.awan::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,.75);
+}
+
+.awan::before {
+  width: 42px;
+  height: 42px;
+  left: 14px;
+  bottom: 7px;
+}
+
+.awan::after {
+  width: 48px;
+  height: 48px;
+  right: 12px;
+  bottom: 4px;
+}
+
+.awan1 { top: 70px; left: 55px; }
+
+.awan2 {
+  top: 125px;
+  left: 280px;
+  transform: scale(.65);
+}
+
+.tanah {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 85px;
+  background: #91b982;
+  z-index: 1;
+}
+
+.pohon {
+  position: absolute;
+  left: 50%;
+  bottom: 55px;
+  width: 620px;
+  height: 560px;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.batang {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 90px;
+  height: 350px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    #634238,
+    #795548 48%,
+    #68463b
+  );
+  border-radius: 45px 45px 15px 15px;
+  z-index: 7;
+}
+
+.cabang-simple {
+  position: absolute;
+  width: 220px;
+  height: 38px;
+  background: #795548;
+  border-radius: 40px;
+  z-index: 6;
+}
+
+.cabang-simple.kiri {
+  left: 115px;
+  bottom: 235px;
+  transform: rotate(-35deg);
+  transform-origin: right center;
+}
+
+.cabang-simple.kanan {
+  right: 115px;
+  bottom: 235px;
+  transform: rotate(35deg);
+  transform-origin: left center;
+}
+
+/* DAUN */
+
+.daun {
+  position: absolute;
+  width: 76px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 55% 12% 55% 12%;
+  background: #4caf50;
+  color: white;
+  text-align: center;
+  font-size: 9px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 20;
+  overflow: hidden;
+  box-shadow: 0 3px 8px rgba(0,0,0,.15);
+  transition: transform .2s, box-shadow .2s;
+}
+
+.daun:hover {
+  transform: scale(1.12) rotate(3deg);
+  box-shadow: 0 7px 14px rgba(0,0,0,.2);
+}
+
+#tambahBtn {
+  display: block;
+  margin: 25px auto 0;
+  padding: 14px 26px;
+  border: none;
+  border-radius: 12px;
+  background: #2f6b3d;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+#tambahBtn:hover {
+  background: #255a32;
+  transform: translateY(-2px);
+}
+
+/* MODAL */
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  z-index: 100;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 20px;
+  padding: 25px;
+}
+
+.modal-content h2 {
+  text-align: center;
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+input, textarea {
+  width: 100%;
+  margin-top: 7px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid #d9ded9;
+  border-radius: 10px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #2f6b3d;
+}
+
+textarea {
+  height: 110px;
+  resize: vertical;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: #2f6b3d;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.submit-btn:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.close-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  border: none;
+  border-radius: 10px;
+  background: #eeeeee;
+  cursor: pointer;
+}
+
+.loading {
+  display: none;
+  text-align: center;
+  margin-top: 12px;
+  color: #2f6b3d;
+  font-size: 14px;
+}
+
+.loading::before {
+  content: "● ● ●";
+  display: block;
+  letter-spacing: 4px;
+  animation: loadingDots 1s infinite;
+}
+
+@keyframes loadingDots {
+  0%,100% { opacity: .25; }
+  50% { opacity: 1; }
+}
+
+.error {
+  display: none;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 9px;
+  background: #ffe5e5;
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.detail {
+  line-height: 1.65;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.hapus-btn {
+  width: 100%;
+  margin-top: 15px;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #d9534f;
+  color: white;
+  cursor: pointer;
+}
+
+.hapus-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  header { padding: 32px 15px; }
+  header h1 { font-size: 25px; }
+  header p { font-size: 13px; }
+
+  .pohon-area { height: 570px; }
+
+  .pohon {
+    width: 500px;
+    height: 500px;
+    bottom: 48px;
+    transform: translateX(-50%) scale(.82);
+    transform-origin: bottom center;
+  }
+
+  .matahari {
+    width: 55px;
+    height: 55px;
+    right: 20px;
+    top: 25px;
+  }
+
+  .awan1 { left: 15px; }
+  .awan2 { left: 150px; }
+
+  .daun {
+    width: 62px;
+    height: 37px;
+    font-size: 8px;
+  }
+
+  .kelas-btn { padding: 10px 15px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🌳 Pohon Literasi Digital</h1>
+  <p>Satu bacaan, satu daun, menumbuhkan budaya literasi.</p>
+</header>
+
+<main class="container">
+
+  <div class="kelas-container">
+    <button class="kelas-btn active" data-kelas="10A">10A</button>
+    <button class="kelas-btn" data-kelas="10B">10B</button>
+    <button class="kelas-btn" data-kelas="11A">11A</button>
+    <button class="kelas-btn" data-kelas="11B">11B</button>
+    <button class="kelas-btn" data-kelas="12A">12A</button>
+    <button class="kelas-btn" data-kelas="12B">12B</button>
+  </div>
+
+  <div class="info">
+    Pohon Literasi Kelas <b id="namaKelas">10A</b>
+    <br>
+    📚 Total Daun:
+    <b id="jumlahDaun" class="jumlah">0</b>
+  </div>
+
+  <div class="pohon-area" id="pohonArea">
+    <div class="matahari"></div>
+    <div class="awan awan1"></div>
+    <div class="awan awan2"></div>
+    <div class="tanah"></div>
+
+    <div class="pohon" id="pohon">
+      <div class="batang"></div>
+      <div class="cabang-simple kiri"></div>
+      <div class="cabang-simple kanan"></div>
+    </div>
+  </div>
+
+  <button id="tambahBtn">🍃 Tambahkan Daun</button>
+
+</main>
+
+<!-- MODAL FORM -->
+
+<div class="modal" id="modalForm">
+  <div class="modal-content">
+    <h2>Tambahkan Daun 🍃</h2>
+
+    <label>Nama</label>
+    <input id="nama" type="text" placeholder="Masukkan nama">
+
+    <label>Judul Bacaan</label>
+    <input id="judul" type="text" placeholder="Masukkan judul bacaan">
+
+    <label>Ringkasan</label>
+    <textarea id="ringkasan" placeholder="Tuliskan ringkasan atau hal yang kamu dapatkan"></textarea>
+
+    <button class="submit-btn" id="submitBtn">
+      🍃 Tambahkan ke Pohon
+    </button>
+
+    <div class="loading" id="loading">Menyimpan data...</div>
+    <div class="error" id="error"></div>
+
+    <button class="close-btn" id="closeForm">Batal</button>
+  </div>
+</div>
+
+<!-- MODAL DETAIL -->
+
+<div class="modal" id="modalDetail">
+  <div class="modal-content">
+    <h2 id="detailJudul"></h2>
+
+    <div class="detail" id="detailIsi"></div>
+
+    <button class="hapus-btn" id="hapusBtn">
+      🗑️ Hapus Daun
+    </button>
+
+    <button class="close-btn" id="closeDetail">Tutup</button>
+  </div>
+</div>
+
+<script>
+
+/* SUPABASE CONFIG */
+
+const SUPABASE_URL =
+  "https://vdctmwildnunwaxycgfs.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_jPDZKzsNVJVC3stLqbp2nQ_iMkfPZkZ";
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+/* VARIABEL */
+
+let kelasAktif = "10A";
+let daunDipilih = null;
+
+const pohon = document.getElementById("pohon");
+const namaKelas = document.getElementById("namaKelas");
+const jumlahDaun = document.getElementById("jumlahDaun");
+const modalForm = document.getElementById("modalForm");
+const modalDetail = document.getElementById("modalDetail");
+const tambahBtn = document.getElementById("tambahBtn");
+const closeForm = document.getElementById("closeForm");
+const closeDetail = document.getElementById("closeDetail");
+const submitBtn = document.getElementById("submitBtn");
+const hapusBtn = document.getElementById("hapusBtn");
+const loading = document.getElementById("loading");
+const errorBox = document.getElementById("error");
+
+/* PILIH KELAS */
+
+document.querySelectorAll(".kelas-btn").forEach(button => {
+  button.addEventListener("click", async () => {
+    kelasAktif = button.dataset.kelas;
+    namaKelas.innerText = kelasAktif;
+
+    document.querySelectorAll(".kelas-btn").forEach(btn => {
+      btn.classList.remove("active");
+    });
+
+    button.classList.add("active");
+
+    await tampilkanDaun();
+  });
+});
+
+/* BUKA FORM */
+
+tambahBtn.addEventListener("click", () => {
+  errorBox.style.display = "none";
+  modalForm.style.display = "flex";
+});
+
+/* TUTUP MODAL */
+
+closeForm.addEventListener("click", () => {
+  modalForm.style.display = "none";
+});
+
+closeDetail.addEventListener("click", () => {
+  modalDetail.style.display = "none";
+});
+
+/* TAMBAH DATA */
+
+submitBtn.addEventListener("click", async () => {
+
+  errorBox.style.display = "none";
+
+  const nama = document.getElementById("nama").value.trim();
+  const judul = document.getElementById("judul").value.trim();
+  const ringkasan = document.getElementById("ringkasan").value.trim();
+
+  if (!nama || !judul || !ringkasan) {
+    errorBox.innerText =
+      "⚠️ Semua data harus diisi terlebih dahulu.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerText = "⏳ Menyimpan...";
+  loading.style.display = "block";
+
+  try {
+
+    const result = await db
+      .from("literasi")
+      .insert({
+        nama: nama,
+        kelas: kelasAktif,
+        judul: judul,
+        ringkasan: ringkasan
+      });
+
+    if (result.error) throw result.error;
+
+    document.getElementById("nama").value = "";
+    document.getElementById("judul").value = "";
+    document.getElementById("ringkasan").value = "";
+
+    modalForm.style.display = "none";
+
+    await tampilkanDaun();
+
+    alert("🍃 Daun berhasil ditambahkan!");
+
+  } catch (error) {
+
+    console.error(error);
+
+    errorBox.innerText =
+      "❌ Gagal menyimpan data: " + error.message;
+
+    errorBox.style.display = "block";
+
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.innerText = "🍃 Tambahkan ke Pohon";
+  loading.style.display = "none";
+
+});
+
+/* TAMPILKAN DAUN */
+
+async function tampilkanDaun() {
+
+  document.querySelectorAll(".daun").forEach(daun => {
+    daun.remove();
+  });
+
+  const result = await db
+    .from("literasi")
+    .select("*")
+    .eq("kelas", kelasAktif)
+    .order("created_at", { ascending: false });
+
+  if (result.error) {
+    console.error(result.error);
+    jumlahDaun.innerText = "0";
+    return;
+  }
+
+  const data = result.data || [];
+
+  jumlahDaun.innerText = data.length;
+
+  data.forEach((literasi, index) => {
+
+    const daun = document.createElement("div");
+    daun.className = "daun";
+    daun.innerText = literasi.judul;
+
+    const posisi = posisiDaun(index, data.length);
+
+    daun.style.left = posisi.x + "%";
+    daun.style.top = posisi.y + "%";
+
+    if (data.length > 70) {
+      daun.style.width = "65px";
+      daun.style.height = "38px";
+      daun.style.fontSize = "8px";
+    }
+
+    if (data.length > 120) {
+      daun.style.width = "56px";
+      daun.style.height = "34px";
+      daun.style.fontSize = "7px";
+    }
+
+    daun.addEventListener("click", () => {
+      bukaDetail(literasi);
+    });
+
+    pohon.appendChild(daun);
+
+  });
+
+}
+
+/* POSISI DAUN SIMETRIS */
+
+/*
+  Daun terbaru berada di atas.
+  Barisan membentuk tajuk pohon.
+*/
+
+function posisiDaun(index, total) {
+
+  const pola = [3, 5, 7, 7, 7, 5, 3];
+
+  let jumlahBaris = [...pola];
+
+  while (
+    jumlahBaris.reduce((a, b) => a + b, 0) < total
+  ) {
+    jumlahBaris.push(7);
+  }
+
+  let sisa = index;
+  let baris = 0;
+
+  while (sisa >= jumlahBaris[baris]) {
+    sisa -= jumlahBaris[baris];
+    baris++;
+  }
+
+  const jumlahKolom = jumlahBaris[baris];
+
+  // Jarak horizontal
+  const jarakX = 12.5;
+
+  // Posisi tengah daun
+  const tengahX =
+    50 + (sisa - (jumlahKolom - 1) / 2) * jarakX;
+
+  // Sesuaikan dengan lebar daun
+  const lebarPohon = 620;
+  const lebarDaun = 76;
+
+  const x =
+    tengahX - (lebarDaun / lebarPohon * 50);
+
+  // Posisi vertikal
+  const totalBaris = jumlahBaris.length;
+
+  const y = totalBaris === 1
+    ? 4
+    : 4 + (baris / (totalBaris - 1)) * 58;
+
+  return {
+    x: Math.max(1, Math.min(87, x)),
+    y: y
+  };
+
+}
+
+/* DETAIL DAUN */
+
+function bukaDetail(literasi) {
+
+  daunDipilih = literasi;
+
+  document.getElementById("detailJudul").innerText =
+    literasi.judul;
+
+  document.getElementById("detailIsi").innerHTML = `
+    <b>Nama:</b>
+    ${escapeHTML(literasi.nama)}
+
+    <br><br>
+
+    <b>Kelas:</b>
+    ${escapeHTML(literasi.kelas)}
+
+    <br><br>
+
+    <b>Ringkasan:</b>
+
+    <br>
+
+    ${escapeHTML(literasi.ringkasan)}
+  `;
+
+  modalDetail.style.display = "flex";
+
+}
+
+/* HAPUS DAUN */
+
+hapusBtn.addEventListener("click", async () => {
+
+  if (!daunDipilih) return;
+
+  const yakin = confirm(
+    "Yakin ingin menghapus daun ini?"
+  );
+
+  if (!yakin) return;
+
+  hapusBtn.disabled = true;
+  hapusBtn.innerText = "⏳ Menghapus...";
+
+  try {
+
+    const result = await db
+      .from("literasi")
+      .delete()
+      .eq("id", daunDipilih.id);
+
+    if (result.error) throw result.error;
+
+    modalDetail.style.display = "none";
+    daunDipilih = null;
+
+    await tampilkanDaun();
+
+    alert("🗑️ Daun berhasil dihapus!");
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert("❌ Gagal menghapus: " + error.message);
+
+  }
+
+  hapusBtn.disabled = false;
+  hapusBtn.innerText = "🗑️ Hapus Daun";
+
+});
+
+/* AMANKAN TEKS HTML */
+
+function escapeHTML(text) {
+
+  const div = document.createElement("div");
+  div.textContent = text || "";
+
+  return div.innerHTML;
+
+}
+
+/* KLIK LUAR MODAL */
+
+modalForm.addEventListener("click", event => {
+  if (event.target === modalForm) {
+    modalForm.style.display = "none";
+  }
+});
+
+modalDetail.addEventListener("click", event => {
+  if (event.target === modalDetail) {
+    modalDetail.style.display = "none";
+  }
+});
+
+/* JALANKAN WEBSITE */
+
+tampilkanDaun();
+
+</script>
+</body>
+</html>
